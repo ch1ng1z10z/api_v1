@@ -1,10 +1,17 @@
 from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
 from django.db.models import Avg, Count
 
 from .models import Category, Product, Review
-from .serializers import CategorySerializer, ProductSerializer, ReviewSerializer
-
-
+from .serializers import (
+    CategorySerializer,
+    ProductSerializer,
+    ReviewSerializer,
+    RegisterSerializer,
+    LoginSerializer,
+    ConfirmSerializer
+)
 
 class CategoryListView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
@@ -17,7 +24,6 @@ class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 
-
 class ProductListView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -26,7 +32,6 @@ class ProductListView(generics.ListCreateAPIView):
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-
 
 
 class ReviewListView(generics.ListCreateAPIView):
@@ -44,7 +49,7 @@ class ProductReviewsListView(generics.ListAPIView):
     serializer_class = ProductSerializer
 
     def get_queryset(self):
-        return Product.objects.all().annotate(rating=Avg('reviews__stars'))
+        return Product.objects.annotate(rating=Avg('reviews__stars'))
 
 
 class CategoryWithCountListView(generics.ListAPIView):
@@ -52,3 +57,34 @@ class CategoryWithCountListView(generics.ListAPIView):
 
     def get_queryset(self):
         return Category.objects.annotate(products_count=Count('products'))
+
+
+
+class RegisterView(generics.CreateAPIView):
+    serializer_class = RegisterSerializer
+
+
+
+class LoginView(generics.GenericAPIView):
+    serializer_class = LoginSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+
+        token, _ = Token.objects.get_or_create(user=user)
+
+        return Response({"token": token.key})
+
+
+
+class ConfirmUserView(generics.GenericAPIView):
+    serializer_class = ConfirmSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({"message": "Аккаунт подтверждён!"})

@@ -1,11 +1,15 @@
 from django.db import models
+from django.contrib.auth.models import User
+import random
+
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
-    
+
+
 class Product(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
@@ -14,7 +18,8 @@ class Product(models.Model):
 
     def __str__(self):
         return self.title
-    
+
+
 class Review(models.Model):
     text = models.TextField()
     product = models.ForeignKey('Product', on_delete=models.CASCADE, related_name='reviews')
@@ -26,3 +31,15 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Review for {self.product.title} - {self.stars}★"
+
+
+def generate_code():
+    return str(random.randint(100000, 999999))
+
+
+class UserConfirmation(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='confirmation')
+    code = models.CharField(max_length=6, default=generate_code)
+
+    def __str__(self):
+        return f"{self.user.username} — {self.code}"
