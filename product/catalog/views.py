@@ -13,6 +13,7 @@ from .serializers import (
     ConfirmSerializer
 )
 
+
 class CategoryListView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -23,6 +24,12 @@ class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CategorySerializer
 
 
+class CategoryWithCountListView(generics.ListAPIView):
+    serializer_class = CategorySerializer
+
+    def get_queryset(self):
+        return Category.objects.annotate(products_count=Count('products'))
+
 
 class ProductListView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
@@ -32,6 +39,14 @@ class ProductListView(generics.ListCreateAPIView):
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+
+
+class ProductReviewsListView(generics.ListAPIView):
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+        return Product.objects.annotate(rating=Avg('reviews__stars'))
+
 
 
 class ReviewListView(generics.ListCreateAPIView):
@@ -45,24 +60,8 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 
-class ProductReviewsListView(generics.ListAPIView):
-    serializer_class = ProductSerializer
-
-    def get_queryset(self):
-        return Product.objects.annotate(rating=Avg('reviews__stars'))
-
-
-class CategoryWithCountListView(generics.ListAPIView):
-    serializer_class = CategorySerializer
-
-    def get_queryset(self):
-        return Category.objects.annotate(products_count=Count('products'))
-
-
-
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
-
 
 
 class LoginView(generics.GenericAPIView):
@@ -71,12 +70,11 @@ class LoginView(generics.GenericAPIView):
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
 
+        user = serializer.validated_data['user']
         token, _ = Token.objects.get_or_create(user=user)
 
         return Response({"token": token.key})
-
 
 
 class ConfirmUserView(generics.GenericAPIView):
